@@ -7,9 +7,9 @@
 
     <groupId>org.example</groupId>
     <artifactId>RecipeManager</artifactId>
-    <version>part1</version>
+    <version>part2</version>
     <name>RecipeManager</name>
-    <description></description>
+    <description>Recipe management application with JFrame</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -18,8 +18,45 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>gr.hua.dit.oop2</groupId>
+            <artifactId>countdown</artifactId>
+            <version>1.0.0</version>
+        </dependency>
 
+        <dependency>
+            <groupId>gr.hua.dit.oop2</groupId>
+            <artifactId>musicplayer</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <!-- JUnit for testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>gitlab-maven</id>
+            <url>https://gitlab.com/api/v4/projects/41008035/packages/maven</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>gitlab-maven</id>
+            <url>https://gitlab.com/api/v4/projects/41008035/packages/maven</url>
+        </repository>
+
+        <snapshotRepository>
+            <id>gitlab-maven</id>
+            <url>https://gitlab.com/api/v4/projects/41008035/packages/maven</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <plugins>
