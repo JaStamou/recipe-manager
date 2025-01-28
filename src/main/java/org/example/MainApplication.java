@@ -29,7 +29,7 @@ public class MainApplication {
             // Λίστα συνταγών
             DefaultListModel<File> recipeListModel = new DefaultListModel<>();
             JList<File> recipeList = new JList<>(recipeListModel);
-            recipeList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+            recipeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             JScrollPane recipeScrollPane = new JScrollPane(recipeList);
             recipeScrollPane.setPreferredSize(new Dimension(250, 0));
             mainPanel.add(recipeScrollPane, BorderLayout.WEST);
@@ -44,14 +44,16 @@ public class MainApplication {
             JButton loadButton = new JButton("Φόρτωση Συνταγών");
             JButton viewButton = new JButton("Εμφάνιση Συνταγής");
             JButton shoppingListButton = new JButton("Λίστα Αγορών");
-            JButton clearButton = new JButton("Καθαρισμός");
+            JButton executeButton = new JButton("Εκτέλεση Συνταγής");
             viewButton.setEnabled(false);
             shoppingListButton.setEnabled(false);
+            executeButton.setEnabled(false);
 
             // Προσθήκη κουμπιών
             buttonPanel.add(loadButton);
             buttonPanel.add(viewButton);
             buttonPanel.add(shoppingListButton);
+            buttonPanel.add(executeButton);
 
             // Λειτουργία φόρτωσης συνταγών
             loadButton.addActionListener(e -> {
@@ -70,24 +72,21 @@ public class MainApplication {
                 boolean isSelected = !recipeList.isSelectionEmpty();
                 viewButton.setEnabled(isSelected);
                 shoppingListButton.setEnabled(isSelected);
+                executeButton.setEnabled(isSelected);
             });
 
-            // Λειτουργία εμφάνισης συνταγής
             // Λειτουργία εμφάνισης συνταγής
             viewButton.addActionListener(e -> {
                 File selectedFile = recipeList.getSelectedValue();
                 if (selectedFile != null) {
                     try {
-                        // Ανάγνωση αρχείου και εξαγωγή δεδομένων
                         List<String> lines = Files.readAllLines(selectedFile.toPath());
                         Extractor.ExtractedData data = Extractor.extractData(lines);
 
-                        // Υπολογισμός συνολικού χρόνου
                         int totalTime = data.getSteps().stream()
                                 .mapToInt(Step::getTime)
                                 .sum();
 
-                        // Δημιουργία αποτελέσματος εμφάνισης
                         resultArea.setText("Συνταγή: " + selectedFile.getName() + "\n\n");
                         resultArea.append("Υλικά:\n");
                         for (Ingredient ingredient : data.getIngredients()) {
@@ -107,7 +106,6 @@ public class MainApplication {
                     }
                 }
             });
-
 
             // Λειτουργία παραγωγής λίστας αγορών
             shoppingListButton.addActionListener(e -> {
@@ -129,6 +127,59 @@ public class MainApplication {
                     }
                 } else {
                     resultArea.setText("Επιλέξτε τουλάχιστον μία συνταγή.");
+                }
+            });
+
+            // Λειτουργία εκτέλεσης συνταγής
+            executeButton.addActionListener(e -> {
+                File selectedFile = recipeList.getSelectedValue();
+                if (selectedFile != null) {
+                    try {
+                        List<String> lines = Files.readAllLines(selectedFile.toPath());
+                        Extractor.ExtractedData data = Extractor.extractData(lines);
+
+                        new Thread(() -> {
+                            SwingUtilities.invokeLater(() -> resultArea.setText(""));
+                            for (Step step : data.getSteps()) {
+                                SwingUtilities.invokeLater(() -> resultArea.append(step.toString() + "\n"));
+
+                                if (step.getTime() > 0) {
+                                    int timeInSeconds = step.getTime() * 60; // Μετατροπή λεπτών σε δευτερόλεπτα
+                                    Countdown countdown = new Countdown(timeInSeconds , new Countdown.CountdownListener() {
+                                        @Override
+                                        public void onStart(int totalTime) {
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Ξεκινά αντίστροφη μέτρηση: " + totalTime + " δευτερόλεπτα\n"));
+                                        }
+
+                                        @Override
+                                        public void onTick(int secondsRemaining) {
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Χρόνος που απομένει: " + secondsRemaining + " δευτερόλεπτα\n"));
+                                        }
+
+                                        @Override
+                                        public void onFinish() {
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Η αντίστροφη μέτρηση ολοκληρώθηκε!\n\n"));
+                                        }
+
+                                        @Override
+                                        public void onStop() {
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Η αντίστροφη μέτρηση σταμάτησε.\n\n"));
+                                        }
+                                    });
+
+                                    countdown.start();
+                                    try {
+                                        Thread.sleep(step.getTime() * 1000L);
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
+                            }
+                            SwingUtilities.invokeLater(() -> resultArea.append("Η συνταγή ολοκληρώθηκε!\n"));
+                        }).start();
+
+                    } catch (IOException ex) {
+                        resultArea.setText("Σφάλμα κατά την ανάγνωση της συνταγής.");
+                    }
                 }
             });
 
