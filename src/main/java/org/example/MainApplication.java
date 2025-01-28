@@ -145,15 +145,16 @@ public class MainApplication {
 
                                 if (step.getTime() > 0) {
                                     int timeInSeconds = step.getTime() * 60; // Μετατροπή λεπτών σε δευτερόλεπτα
-                                    Countdown countdown = new Countdown(timeInSeconds , new Countdown.CountdownListener() {
+
+                                    Countdown countdown = new Countdown(timeInSeconds, new Countdown.CountdownListener() {
                                         @Override
                                         public void onStart(int totalTime) {
-                                            SwingUtilities.invokeLater(() -> resultArea.append("Ξεκινά αντίστροφη μέτρηση: " + totalTime + " δευτερόλεπτα\n"));
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Ξεκινά αντίστροφη μέτρηση: " + (totalTime / 60) + " λεπτά (" + totalTime + " δευτερόλεπτα)\n"));
                                         }
 
                                         @Override
                                         public void onTick(int secondsRemaining) {
-                                            SwingUtilities.invokeLater(() -> resultArea.append("Χρόνος που απομένει: " + secondsRemaining + " δευτερόλεπτα\n"));
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Χρόνος που απομένει: " + (secondsRemaining / 60) + " λεπτά (" + secondsRemaining + " δευτερόλεπτα)\n"));
                                         }
 
                                         @Override
@@ -169,7 +170,7 @@ public class MainApplication {
 
                                     countdown.start();
                                     try {
-                                        Thread.sleep(step.getTime() * 1000L);
+                                        Thread.sleep(timeInSeconds * 1000L);
                                     } catch (InterruptedException ignored) {
                                     }
                                 }
@@ -182,6 +183,7 @@ public class MainApplication {
                     }
                 }
             });
+
 
             // Εμφάνιση παραθύρου
             frame.setVisible(true);
