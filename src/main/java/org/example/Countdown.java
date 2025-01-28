@@ -8,11 +8,13 @@ public class Countdown {
     private int timeRemaining; // Ο χρόνος που απομένει, σε δευτερόλεπτα
     private Timer timer;       // Timer για την αντίστροφη μέτρηση
     private CountdownListener listener; // Ακροατής για τα γεγονότα της αντίστροφης μέτρησης
+    private Notifier notifier; // Διεπαφή για την ειδοποίηση του χρήστη
 
     // Δημιουργία της αντίστροφης μέτρησης
-    public Countdown(int timeInSeconds, CountdownListener listener) {
+    public Countdown(int timeInSeconds, CountdownListener listener, Notifier notifier) {
         this.timeRemaining = timeInSeconds;
         this.listener = listener;
+        this.notifier = notifier;
         initializeTimer();
     }
 
@@ -27,6 +29,9 @@ public class Countdown {
                 } else {
                     timer.stop();
                     listener.onFinish(); // Όταν τελειώσει η αντίστροφη μέτρηση
+                    if (notifier != null) {
+                        notifier.notifyUser(); // Ειδοποίηση χρήστη μέσω Notifier
+                    }
                 }
             }
         });
@@ -66,5 +71,10 @@ public class Countdown {
         void onTick(int secondsRemaining); // Κάθε tick της αντίστροφης μέτρησης
         void onFinish(); // Όταν ολοκληρώνεται η αντίστροφη μέτρηση
         void onStop(); // Όταν σταματά η αντίστροφη μέτρηση
+    }
+
+    // Διεπαφή για την ειδοποίηση του χρήστη
+    public interface Notifier {
+        void notifyUser(); // Μέθοδος ειδοποίησης του χρήστη
     }
 }
