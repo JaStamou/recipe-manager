@@ -31,6 +31,13 @@ Recipe Manager is a Java-based desktop application designed to help users manage
 
 ---
 
+## Prerequisites
+Ensure you have the following installed on your system:
+- **Java Development Kit (JDK)**: Version 21 or higher.
+- **Maven**: Version 3.8.1 or higher.
+
+---
+
 ## Project Structure
 - **Main Classes**:
   - `MainApplication`: Entry point for the application. Initializes the GUI and handles user interactions.
