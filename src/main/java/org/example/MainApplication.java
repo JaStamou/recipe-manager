@@ -42,7 +42,7 @@ public class MainApplication {
 
             // Κουμπιά
             JButton loadButton = new JButton("Φόρτωση Συνταγών");
-            JButton viewButton = new JButton("Δες Συνταγή");
+            JButton viewButton = new JButton("Εμφάνιση Συνταγής");
             JButton shoppingListButton = new JButton("Λίστα Αγορών");
             viewButton.setEnabled(false);
             shoppingListButton.setEnabled(false);
@@ -72,15 +72,61 @@ public class MainApplication {
             });
 
             // Λειτουργία εμφάνισης συνταγής
+            // Λειτουργία εμφάνισης συνταγής
             viewButton.addActionListener(e -> {
                 File selectedFile = recipeList.getSelectedValue();
                 if (selectedFile != null) {
                     try {
+                        // Ανάγνωση αρχείου και εξαγωγή δεδομένων
                         List<String> lines = Files.readAllLines(selectedFile.toPath());
                         Extractor.ExtractedData data = Extractor.extractData(lines);
 
+                        // Υπολογισμός συνολικού χρόνου
+                        int totalTime = data.getSteps().stream()
+                                .mapToInt(Step::getTime)
+                                .sum();
+
+                        // Δημιουργία αποτελέσματος εμφάνισης
                         resultArea.setText("Συνταγή: " + selectedFile.getName() + "\n\n");
                         resultArea.append("Υλικά:\n");
+                        for (Ingredient ingredient : data.getIngredients()) {
+                            resultArea.append("- " + ingredient + "\n");
+                        }
+                        resultArea.append("\nΣκεύη:\n");
+                        for (Utensil utensil : data.getUtensils()) {
+                            resultArea.append("- " + utensil + "\n");
+                        }
+                        resultArea.append("\nΒήματα:\n");
+                        for (int i = 0; i < data.getSteps().size(); i++) {
+                            resultArea.append((i + 1) + ". " + data.getSteps().get(i) + "\n\n");
+                        }
+                        resultArea.append("Συνολική διάρκεια: " + totalTime + " λεπτά\n\n");
+                    } catch (IOException ex) {
+                        resultArea.setText("Σφάλμα κατά την ανάγνωση της συνταγής.");
+                    }
+                }
+            });
+
+
+            // Λειτουργία παραγωγής λίστας αγορών
+            // Λειτουργία εμφάνισης συνταγής
+            viewButton.addActionListener(e -> {
+                File selectedFile = recipeList.getSelectedValue();
+                if (selectedFile != null) {
+                    try {
+                        // Ανάγνωση αρχείου και εξαγωγή δεδομένων
+                        List<String> lines = Files.readAllLines(selectedFile.toPath());
+                        Extractor.ExtractedData data = Extractor.extractData(lines);
+
+                        // Υπολογισμός συνολικού χρόνου
+                        int totalTime = data.getSteps().stream()
+                                .mapToInt(Step::getTime)
+                                .sum();
+
+                        // Δημιουργία αποτελέσματος εμφάνισης
+                        resultArea.setText("Συνταγή: " + selectedFile.getName() + "\n\n");
+                        resultArea.append("Υλικά:\n");
+                        resultArea.append("Συνολικός Χρόνος: " + totalTime + " λεπτά\n\n");
                         for (Ingredient ingredient : data.getIngredients()) {
                             resultArea.append("- " + ingredient + "\n");
                         }
@@ -98,28 +144,6 @@ public class MainApplication {
                 }
             });
 
-            // Λειτουργία παραγωγής λίστας αγορών
-            shoppingListButton.addActionListener(e -> {
-                int[] selectedIndices = recipeList.getSelectedIndices();
-                if (selectedIndices.length > 0) {
-                    try {
-                        ShoppingList shoppingList = new ShoppingList();
-                        for (int index : selectedIndices) {
-                            File file = recipeListModel.get(index);
-                            shoppingList.addIngredientsFromRecipe(file.getAbsolutePath());
-                        }
-
-                        resultArea.setText("Λίστα Αγορών:\n\n");
-                        for (Ingredient ingredient : shoppingList.getIngredients()) {
-                            resultArea.append("- " + ingredient + "\n");
-                        }
-                    } catch (IOException ex) {
-                        resultArea.setText("Σφάλμα κατά τη δημιουργία λίστας αγορών.");
-                    }
-                } else {
-                    resultArea.setText("Επιλέξτε τουλάχιστον μία συνταγή.");
-                }
-            });
 
             // Εμφάνιση παραθύρου
             frame.setVisible(true);
