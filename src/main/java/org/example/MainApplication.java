@@ -1,5 +1,8 @@
 package org.example;
 
+import gr.hua.dit.oop2.countdown.Countdown;
+import gr.hua.dit.oop2.countdown.CountdownFactory;
+import gr.hua.dit.oop2.countdown.Notifier;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -7,8 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-
 
 public class MainApplication {
 
@@ -128,10 +129,10 @@ public class MainApplication {
                                 resultArea.setText("Σφάλμα κατά τη δημιουργία λίστας αγορών.");
                             }
                         } else {
-                            resultArea.setText("Επιλέξτε τουλάχιστον μία συνταγή.");
                         }
                     });
 
+            // Λειτουργία εκτέλεσης συνταγής
             executeButton.addActionListener(e -> {
                 File selectedFile = recipeList.getSelectedValue();
                 if (selectedFile != null) {
@@ -140,55 +141,58 @@ public class MainApplication {
                         Extractor.ExtractedData data = Extractor.extractData(lines);
 
                         new Thread(() -> {
-                            SwingUtilities.invokeLater(() -> resultArea.setText("Ξεκινάμε τη συνταγή...\n\n"));
+                            SwingUtilities.invokeLater(() -> resultArea.setText("Ξεκινάμε τη συνταγή.\n\n"));
+
+                            int i=0;
                             for (Step step : data.getSteps()) {
-                                SwingUtilities.invokeLater(() -> resultArea.append("Βήμα: " + step + "\n"));
+
+                                int stepCounter = i;
+                                SwingUtilities.invokeLater(() -> resultArea.append("Βήμα " + stepCounter + ": " + step + "\n"));
+                                i++;
+
 
                                 if (step.getTime() > 0) {
-                                    int timeInSeconds = step.getTime() * 60; // Μετατροπή λεπτών σε δευτερόλεπτα
-                                    CountDownLatch latch = new CountDownLatch(1); // Χρήση CountDownLatch για συγχρονισμό
+                                    Countdown countdown = CountdownFactory.countdown(step.toString(), step.getTime());
 
-                                    Countdown countdown = new Countdown(timeInSeconds,
-                                            new Countdown.CountdownListener() {
-                                                @Override
-                                                public void onStart(int totalTime) {
-                                                    SwingUtilities.invokeLater(() -> resultArea.append("Ξεκινά αντίστροφη μέτρηση: " + (totalTime / 60) + " λεπτά\n"));
-                                                }
-
-                                                @Override
-                                                public void onTick(int secondsRemaining) {
-                                                    SwingUtilities.invokeLater(() -> resultArea.append("Χρόνος που απομένει: " + secondsRemaining + " δευτερόλεπτα\n"));
-                                                }
-
-                                                @Override
-                                                public void onFinish() {
-                                                    SwingUtilities.invokeLater(() -> resultArea.append("Η αντίστροφη μέτρηση ολοκληρώθηκε!\n\n"));
-                                                    // Μόλις ολοκληρωθεί η αντίστροφη μέτρηση, περιμένουμε την απάντηση του χρήστη
-                                                    SwingUtilities.invokeLater(() -> {
-                                                        int response = JOptionPane.showConfirmDialog(null,
-                                                                "Η αντίστροφη μέτρηση ολοκληρώθηκε. Είστε έτοιμοι να προχωρήσετε στο επόμενο βήμα;",
-                                                                "Επιβεβαίωση", JOptionPane.YES_NO_OPTION);
-
-                                                        if (response != JOptionPane.YES_OPTION) {
-                                                            SwingUtilities.invokeLater(() -> resultArea.append("Η συνταγή σταμάτησε.\n"));
-                                                            System.exit(0); // Τερματίζουμε την εκτέλεση της συνταγής
-                                                        }
-                                                        latch.countDown(); // Απελευθερώνουμε το latch για να προχωρήσει
-                                                    });
-                                                }
-
-                                                @Override
-                                                public void onStop() {
-                                                    SwingUtilities.invokeLater(() -> resultArea.append("Η αντίστροφη μέτρηση σταμάτησε.\n\n"));
-                                                    latch.countDown(); // Απελευθερώνουμε το latch
-                                                }
-                                            }, null);
+                                    countdown.addNotifier(new Notifier() {
+                                        @Override
+                                        public void finished(Countdown c) {
+                                            SwingUtilities.invokeLater(() -> {
+                                                resultArea.append("Η αντίστροφη μέτρηση ολοκληρώθηκε: " + c.getName() + "\n");
+                                            });
+                                        }
+                                    });
 
                                     countdown.start();
 
-                                    try {
-                                        latch.await(); // Περιμένουμε την ολοκλήρωση της αντίστροφης μέτρησης και την απάντηση του χρήστη
-                                    } catch (InterruptedException ignored) {
+                                    // Αναμονή για την απάντηση του χρήστη
+                                    while (true) {
+                                        // Αναμονή για την ολοκλήρωση ή παύση της αντίστροφης μέτρησης
+                                        if (countdown.secondsRemaining() == 0) {
+                                            countdown.stop(); // Διακοπή της αντίστροφης μέτρησης
+                                            break;
+                                        }
+
+                                        try {
+                                            Thread.sleep(1000); // Ενημέρωση κάθε 1 δευτερόλεπτο
+                                            SwingUtilities.invokeLater(() -> resultArea.append(
+                                                    "Χρόνος που απομένει: " + countdown.secondsRemaining() + " δευτερόλεπτα\n"));
+                                        } catch (InterruptedException ignored) {
+                                        }
+                                    }
+
+                                    // Περιμένουμε απάντηση από τον χρήστη
+                                    boolean userResponse = false;
+                                    while (!userResponse) {
+                                        int response = JOptionPane.showConfirmDialog(null,
+                                                "Τέλος αντίστροφης μέτρησης. Είστε έτοιμοι να προχωρήσετε στο επόμενο βήμα;",
+                                                "Επιβεβαίωση", JOptionPane.YES_NO_OPTION);
+
+                                        if (response == JOptionPane.YES_OPTION) {
+                                            userResponse = true;
+                                        } else {
+                                            SwingUtilities.invokeLater(() -> resultArea.append("Παρακαλώ επιβεβαιώστε ότι είστε έτοιμοι να προχωρήσετε.\n"));
+                                        }
                                     }
                                 }
                             }
@@ -201,11 +205,7 @@ public class MainApplication {
                 }
             });
 
-
-
-
-
-            // Εμφάνιση παραθύρου
+           // Εμφάνιση παραθύρου
             frame.setVisible(true);
         });
     }
